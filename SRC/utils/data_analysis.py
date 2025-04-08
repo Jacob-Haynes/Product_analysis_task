@@ -32,7 +32,7 @@ def load_data(db_path, table_name, limit=None):
 
 
 def get_counts(df, column_name):
-    """Calculates and prints value counts and percentage total for a specified column.
+    """Calculates and prints value counts and percentage total for a specified column and saves to csv.
 
     :param df: pandas dataframe
     :param column_name: name of the column to be counted
@@ -42,25 +42,31 @@ def get_counts(df, column_name):
         counts = df[column_name].value_counts()
         total = len(df)
         percentages = (counts / total) * 100
-        print(f"\nCounts and Percentages of {column_name}:")
-        for index, count in counts.items():
-            percentage = percentages.get(index, 0)
-            print(f"{index}: {count} ({percentage: .2f}%)")
+        output_path = os.path.join(
+            "../data", f'{column_name.lower().replace(" ", "_")}_counts.csv'
+        )
+        counts_df = pd.DataFrame({"Count": counts, "Percentage": percentages})
+        try:
+            counts_df.to_csv(output_path)
+            print(f"\nCounts and percentages of {column_name} saved to: {output_path}")
+        except Exception as e:
+            print(f"Error saving {column_name} counts to CSV: {e}")
         return counts, percentages
     else:
         print(
-            f"Error: DataFrame is None or missing '{column_name}'"
+            f"Error: DataFrame is None or missing '{column_name}' column for {title} analysis."
         )
         return None, None
 
 
 def analyse_join_counts(db_path):
     """
-    Analyzes how many rows in the 'cases' table have joins with other tables.
+    Analyses how many rows in the 'cases' table have joins with other tables.
     So we can see if multiple channels are used in a singular case and the volume.
     """
     database_url = f"sqlite:///{db_path}"
     engine = create_engine(database_url)
+    join_results = {}
     try:
         cases_df = pd.read_sql('SELECT "Id", "SESSION ID" FROM cases', engine)
         phone_df = pd.read_sql('SELECT "SESSION ID" FROM phone', engine)
@@ -73,6 +79,7 @@ def analyse_join_counts(db_path):
         phone_join_count = pd.merge(
             cases_df, phone_df, on="SESSION ID", how="inner"
         ).shape[0]
+        join_results["phone_to_case_join_count"] = phone_join_count
         print(
             f"\nNumber of cases joined with 'phone' table (via SESSION ID): {phone_join_count}"
         )
@@ -81,6 +88,7 @@ def analyse_join_counts(db_path):
         omni_join_count = pd.merge(
             cases_df, omni_df, left_on="Id", right_on="Work Item Id", how="inner"
         ).shape[0]
+        join_results["omni_to_case_join_count"] = omni_join_count
         print(
             f"Number of cases joined with 'email_web_whatsapp_community' table (via Id - Work Item Id): {omni_join_count}"
         )
@@ -89,6 +97,7 @@ def analyse_join_counts(db_path):
         whatsapp_join_count = pd.merge(
             cases_df, whatsapp_df, left_on="Id", right_on="Case Id", how="inner"
         ).shape[0]
+        join_results["whatsapp_to_case_join_count"] = whatsapp_join_count
         print(
             f"Number of cases joined with 'whatsapp' table (via Id - Case Id): {whatsapp_join_count}"
         )
@@ -108,11 +117,12 @@ def analyse_join_counts(db_path):
             )
             > 1
         ].shape[0]
+        join_results["multiple_joins_count"] = multiple_joins_count
         print(
             f"\nNumber of cases with joins to more than one other table: {multiple_joins_count}"
         )
 
-        # Cases with multiple entries in other tables:
+        # Cases with multiple entries in phone table
         cases_with_multiple_phone_entries = pd.merge(
             cases_df,
             phone_df.groupby("SESSION ID")
@@ -122,10 +132,12 @@ def analyse_join_counts(db_path):
             on="SESSION ID",
             how="inner",
         ).shape[0]
+        join_results["multiple_phone_entries_count"] = cases_with_multiple_phone_entries
         print(
             f"Number of cases with multiple entries in the 'phone' table: {cases_with_multiple_phone_entries}"
         )
 
+        # Cases with multiple entries in omni table
         cases_with_multiple_omni_entries = pd.merge(
             cases_df,
             omni_df.groupby("Work Item Id")
@@ -136,10 +148,12 @@ def analyse_join_counts(db_path):
             right_on="Work Item Id",
             how="inner",
         ).shape[0]
+        join_results["multiple_omni_entries_count"] = cases_with_multiple_omni_entries
         print(
             f"Number of cases with multiple entries in the 'email_web_whatsapp_community' table: {cases_with_multiple_omni_entries}"
         )
 
+        # Cases with multiple entries in whatsapp table
         cases_with_multiple_whatsapp_entries = pd.merge(
             cases_df,
             whatsapp_df.groupby("Case Id")
@@ -150,9 +164,23 @@ def analyse_join_counts(db_path):
             right_on="Case Id",
             how="inner",
         ).shape[0]
+        join_results["multiple_whatsapp_entries_count"] = (
+            cases_with_multiple_whatsapp_entries
+        )
         print(
             f"Number of cases with multiple entries in the 'whatsapp' table: {cases_with_multiple_whatsapp_entries}"
         )
+
+        # Save join results to CSV
+        output_path = os.path.join("../data", "join_analysis_results.csv")
+        join_results_df = pd.DataFrame(
+            list(join_results.items()), columns=["Metric", "Count"]
+        )
+        try:
+            join_results_df.to_csv(output_path, index=False)
+            print(f"\nJoin analysis results saved to: {output_path}")
+        except Exception as e:
+            print(f"Error saving join analysis results to CSV: {e}")
 
     except Exception as e:
         print(f"Error during join analysis: {e}")
