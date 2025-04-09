@@ -39,14 +39,10 @@ FUNCTION PROCESS_USER_QUERY(call_id, user_query)
   help_content = FETCH_URL_CONTENT(help_documentation_url)
 
   // 2. Construct LLM Prompt
-  prompt = "You are a helpful bot assisting users with Checkatrade profile updates. " +
-           "Use the following information from the help documentation to answer the user's question.\n\n" +
-           "Help Documentation:\n" + help_content + "\n\n" +
-           "User Query: " + user_query + "\n\n" +
-           "Response:"
+  prompt = prompt_instructions.txt
 
   // 3. LLM API Call
-  // PSEUDOCODE: Call the LLM API with the constructed prompt
+  // PSEUDOCODE: Call the LLM API with the constructed prompt llm_prototype.py
   llm_response = CALL_LLM_API(prompt)
 
   // Communication Service Component: Respond to the caller

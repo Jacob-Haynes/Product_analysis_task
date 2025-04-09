@@ -29,7 +29,7 @@ def get_user_input():
 def call_llm(prompt):
     """Calls the OpenAI API with the given prompt."""
     try:
-        client = openai.OpenAI()  # Initialize the OpenAI client
+        client = openai.OpenAI()  # Initialise the OpenAI client
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
