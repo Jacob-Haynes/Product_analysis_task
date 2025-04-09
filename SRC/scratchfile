@@ -1,0 +1,67 @@
+FUNCTION handle_incoming_phone_call(call_id)
+  GET current_phone_queue_wait_time AS wait_time
+
+  // Communication Service Component: Initiate voice prompt to the caller
+  PLAY_VOICE_PROMPT(call_id, "Hello! The current phone wait time is approximately " + wait_time + " minutes.")
+  PLAY_VOICE_PROMPT(call_id, "I am a bot and may be able to help you with some common issues while you wait. Would you like to try?")
+
+  // Communication Service Component: Listen for caller's response (yes/no)
+  GET_CALLER_RESPONSE(call_id, response, timeout=10_seconds) // Wait for a response
+
+  IF response IS "yes" OR response indicates agreement THEN
+    // Proceed to bot interaction
+    START_BOT_CONVERSATION(call_id)
+  ELSE IF response IS "no" OR response indicates disagreement THEN
+    // Route call to the queue
+    QUEUE_CALL(call_id)
+    LOG("Caller declined bot assistance. Call queued.")
+  ELSE // No response or unclear response
+    PLAY_VOICE_PROMPT(call_id, "I didn't understand your response. You will now be placed in the queue.")
+    QUEUE_CALL(call_id)
+    LOG("No clear response from caller. Call queued.")
+  ENDIF
+ENDFUNCTION
+
+FUNCTION START_BOT_CONVERSATION(call_id)
+  PLAY_VOICE_PROMPT(call_id, "Great! How can I help you today?")
+
+  // Communication Service Component: Listen for caller's initial query
+  GET_CALLER_INPUT(call_id, initial_query, timeout=30_seconds)
+
+  // Proceed to LLM interaction
+  PROCESS_USER_QUERY(call_id, initial_query)
+ENDFUNCTION
+
+FUNCTION PROCESS_USER_QUERY(call_id, user_query)
+  // 1. Access Help Documentation
+  help_documentation_url = "https://support.checkatrade.com/s/article/How-do-I-update-my-profile-description"
+  // PSEUDOCODE: Use a service or library to fetch the content of the URL
+  help_content = FETCH_URL_CONTENT(help_documentation_url)
+
+  // 2. Construct LLM Prompt
+  prompt = "You are a helpful bot assisting users with Checkatrade profile updates. " +
+           "Use the following information from the help documentation to answer the user's question.\n\n" +
+           "Help Documentation:\n" + help_content + "\n\n" +
+           "User Query: " + user_query + "\n\n" +
+           "Response:"
+
+  // 3. LLM API Call
+  // PSEUDOCODE: Call the LLM API with the constructed prompt
+  llm_response = CALL_LLM_API(prompt)
+
+  // Communication Service Component: Respond to the caller
+  PLAY_VOICE_PROMPT(call_id, llm_response)
+
+  // Consider follow-up or escalation logic here in a real implementation
+  PLAY_VOICE_PROMPT(call_id, "Did this answer your question? (yes/no)")
+  GET_CALLER_RESPONSE(call_id, feedback, timeout=10_seconds)
+
+  IF feedback indicates "no" THEN
+    PLAY_VOICE_PROMPT(call_id, "I apologize that I couldn't fully assist you. I will now connect you with a human agent.")
+    QUEUE_CALL(call_id, priority=high) // Optionally increase priority
+  ELSE
+    PLAY_VOICE_PROMPT(call_id, "Great! If you have any other questions, feel free to ask. Otherwise, have a good day!")
+    // Communication Service Component: End the call or offer further assistance
+    END_CALL(call_id) // Or loop back for more questions
+  ENDIF
+ENDFUNCTION
