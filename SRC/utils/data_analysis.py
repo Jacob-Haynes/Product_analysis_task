@@ -537,3 +537,80 @@ def analyse_handle_time_issue_origin_counts(cases_df, omni_df, phone_df):
         print(
             "Error: One or more of the required DataFrames are None or missing necessary columns for this analysis."
         )
+
+
+def analyse_whatsapp_success_rate(whatsapp_df):
+    """
+    Calculates the success rate of bot vs. human agents in the provided whatsapp DataFrame
+    based on whether the message count is greater than 0.
+
+    :param whatsapp_df: pandas DataFrame of the whatsapp table.
+    :return: None
+    """
+    if whatsapp_df is None:
+        print("Error: whatsapp_df is None.")
+        return
+
+    if (
+        "Agent Type" not in whatsapp_df.columns
+        or "Agent Message Count" not in whatsapp_df.columns
+    ):
+        print(
+            "Error: Both 'Agent Type' and 'Agent Message Count' columns are required in the whatsapp DataFrame."
+        )
+        return
+
+    try:
+        # Identify bot and human interactions (adjust logic based on your actual data)
+        bot_interactions = whatsapp_df[whatsapp_df["Agent Type"] == "Bot"]
+        human_interactions = whatsapp_df[whatsapp_df["Agent Type"] == "Agent"]
+
+        # Calculate success rates based on message count > 0
+        total_bot_interactions = len(bot_interactions)
+        successful_bot_interactions = len(
+            bot_interactions[bot_interactions["Agent Message Count"] > 0]
+        )
+        bot_success_rate = (
+            (successful_bot_interactions / total_bot_interactions) * 100
+            if total_bot_interactions > 0
+            else 0
+        )
+
+        total_human_interactions = len(human_interactions)
+        successful_human_interactions = len(
+            human_interactions[human_interactions["Agent Message Count"] > 0]
+        )
+        human_success_rate = (
+            (successful_human_interactions / total_human_interactions) * 100
+            if total_human_interactions > 0
+            else 0
+        )
+
+        # Create a summary DataFrame
+        success_rate_df = pd.DataFrame(
+            {
+                "Agent Type": ["Bot", "Human"],
+                "Total Interactions": [
+                    total_bot_interactions,
+                    total_human_interactions,
+                ],
+                "Successful Interactions (Message Count > 0)": [
+                    successful_bot_interactions,
+                    successful_human_interactions,
+                ],
+                "Success Rate (%)": [bot_success_rate, human_success_rate],
+            }
+        )
+
+        # Save to CSV
+        output_path = os.path.join("../data", "whatsapp_success_rate.csv")
+        try:
+            success_rate_df.to_csv(output_path, index=False)
+            print(
+                f"\nWhatsApp bot vs. human success rate analysis (based on message count > 0) saved to: {output_path}"
+            )
+        except Exception as e:
+            print(f"Error saving WhatsApp success rate analysis to CSV: {e}")
+
+    except Exception as e:
+        print(f"Error during WhatsApp success rate analysis: {e}")

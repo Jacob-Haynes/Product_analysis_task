@@ -10,6 +10,7 @@ from utils.data_analysis import (
     analyse_avg_phone_entries,
     analyse_avg_handle_time_by_issue_type,
     analyse_handle_time_issue_origin_counts,
+    analyse_whatsapp_success_rate,
 )
 
 db_path = os.path.join("../data", "case.db")
@@ -20,6 +21,7 @@ test_database_connection(db_path)
 cases_df = load_data(db_path, "cases")
 phone_df = load_data(db_path, "phone")
 omni_df = load_data(db_path, "email_web_whatsapp_community")
+whatsapp_df = load_data(db_path, "whatsapp")
 
 # get counts
 if cases_df is not None:
@@ -39,5 +41,8 @@ analyse_avg_phone_entries(cases_df, phone_df)
 # average handle time per issue type
 analyse_avg_handle_time_by_issue_type(cases_df, omni_df, phone_df)
 
-#  average handle time and counts per issue type and origin
+# average handle time and counts per issue type and origin
 analyse_handle_time_issue_origin_counts(cases_df, omni_df, phone_df)
+
+# bot success rate so far
+analyse_whatsapp_success_rate(whatsapp_df)
