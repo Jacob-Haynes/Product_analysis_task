@@ -1,50 +1,43 @@
 import os
-import openai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
-# load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
-# Load your OpenAI API key from an environment variable for security
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
+# Get the Gemini API key from the environment variables
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 def load_prompt_from_file(filepath):
     """Loads the prompt instructions from a text file."""
     try:
-        with open(filepath, "r") as f:
+        with open(filepath, 'r') as f:
             prompt = f.read()
         return prompt
     except FileNotFoundError:
         print(f"Error: File not found at {filepath}")
         return None
 
-
 def get_user_input():
-    """Simulates receiving user input."""
+    """Simulates receiving user text input."""
     user_text = input("Simulated User Input: ")
     return user_text
 
-
-def call_llm(prompt):
-    """Calls the OpenAI API with the given prompt."""
-    try:
-        client = openai.OpenAI()  # Initialise the OpenAI client
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant.",
-                },  # Optional base system message
-                {"role": "user", "content": prompt},
-            ],
-        )
-        return response.choices[0].message.content
-    except openai.APIError as e:
-        print(f"Error calling OpenAI API: {e}")
+def call_gemini(prompt):
+    """Calls the Gemini API with the given prompt."""
+    if not GOOGLE_API_KEY:
+        print("Error: GOOGLE_API_KEY environment variable not set.")
         return None
 
+    genai.configure(api_key=GOOGLE_API_KEY)
+    model = genai.GenerativeModel('gemini-2.0-flash')
+
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"Error calling Gemini API: {e}")
+        return None
 
 if __name__ == "__main__":
     prompt_file = "prompt_instructions.txt"
@@ -54,8 +47,8 @@ if __name__ == "__main__":
         user_query = get_user_input()
         if user_query is not None:
             full_prompt = f"{instructions}\n\nUser Query: {user_query}\n\nResponse:"
-            llm_response = call_llm(full_prompt)
+            gemini_response = call_gemini(full_prompt)
 
-            if llm_response:
-                print("\nLLM Response:")
-                print(llm_response)
+            if gemini_response:
+                print("\nGemini Response:")
+                print(gemini_response)

@@ -55,4 +55,4 @@ VAT: Value Added Text is a tax added to the product as Checkatrade is a VAT regi
 TOTAL: The total amount of monies owed to Checkatrade.
 In most cases, your invoice will be paid by direct debit and will be collected on or within 5 working days from the due date of the invoice. Alternatively, you can make a BACS payment, but please do not use this method if you have an active direct debit mandate in place.
 
-Anything outside of these areas you cannot help with so you should apologise politely and let them know that their query will need to be addressed by an agent and that they will need to wait.
+Try to help as best you can and make suggestions relevant to the query - Aif you cannot help you should apologise politely and let them know that their query will need to be addressed by an agent and that they will need to wait.
